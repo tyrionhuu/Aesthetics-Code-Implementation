@@ -1,7 +1,6 @@
+from pptlayout.utils import unit_conversion
 from pptx.presentation import Presentation
 from pptx.slide import Slide
-
-from pptlayout.utils import unit_conversion
 
 from .factories import shape_extractor_factory
 

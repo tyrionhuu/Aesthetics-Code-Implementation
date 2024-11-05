@@ -1,3 +1,4 @@
+from pptlayout.utils import unit_conversion
 from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE, MSO_SHAPE_TYPE, PP_PLACEHOLDER_TYPE
 from pptx.shapes.autoshape import Shape as AutoShape
 from pptx.shapes.base import BaseShape
@@ -6,8 +7,6 @@ from pptx.shapes.graphfrm import GraphicFrame
 from pptx.shapes.group import GroupShape
 from pptx.shapes.picture import Movie, Picture
 from pptx.shapes.placeholder import BasePlaceholder
-
-from pptlayout.utils import unit_conversion
 
 
 class BaseShapeExtractor:
