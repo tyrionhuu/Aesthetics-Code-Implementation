@@ -16,6 +16,7 @@ __pycache__/
 .vscode/
 ../python project template/.idea/
 .DS_Store
+.idea
 
 # Generated files
 data/
