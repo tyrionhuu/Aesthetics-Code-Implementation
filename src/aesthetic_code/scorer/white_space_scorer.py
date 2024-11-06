@@ -87,3 +87,11 @@ class MarginWhiteSpaceScorer:
         ):
             vertical_margin_score += 1
         return float((horizontal_margin_score + vertical_margin_score) / 4)
+
+
+class GroupSpacingWhiteSpaceScorer:
+    """
+    This class is responsible for scoring the white space between groups of shapes on a slide.
+    """
+
+    pass
