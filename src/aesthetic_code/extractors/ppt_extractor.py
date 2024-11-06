@@ -1,6 +1,7 @@
-from aesthetic_code.utils import unit_conversion
 from pptx.presentation import Presentation
 from pptx.slide import Slide
+
+from aesthetic_code.utils import unit_conversion
 
 from .factories import shape_extractor_factory
 
@@ -36,16 +37,16 @@ class PowerPointShapeExtractor:
         self._ppt = ppt
         self._measurement_unit = measurement_unit
 
-    def _extract_slide_width(self) -> int | float:
+    def extract_slide_width(self) -> int | float:
         return unit_conversion(self._ppt.slide_width, self._measurement_unit)
 
-    def _extract_slide_height(self) -> int | float:
+    def extract_slide_height(self) -> int | float:
         return unit_conversion(self._ppt.slide_height, self._measurement_unit)
 
     def _extract_ppt_metadata(self) -> dict:
         return {
-            "slide_width": self._extract_slide_width(),
-            "slide_height": self._extract_slide_height(),
+            "slide_width": self.extract_slide_width(),
+            "slide_height": self.extract_slide_height(),
         }
 
     def extract_slides(self) -> list:
