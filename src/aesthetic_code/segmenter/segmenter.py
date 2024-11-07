@@ -45,6 +45,18 @@ class SegmentTreeNode:
         self._direction = direction  # Arrangement of subregions
         self._bounding_box = bounding_box  # Bounding box of the node
 
+    @property
+    def subregions(self) -> list[Subregion]:
+        return self._subregions
+
+    @property
+    def bounding_box(self) -> dict[str, float]:
+        return self._bounding_box
+
+    @property
+    def direction(self) -> str:
+        return self._direction
+
     def is_leaf(self) -> bool:
         """
         Determines if the node is a leaf node (i.e., has no subregions).

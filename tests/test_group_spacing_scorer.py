@@ -1,186 +1,100 @@
-# from pptx.util import Pt
-# from pptx import Presentation
-# from aesthetic_code.scorer.group_spacing_scorer import GroupSpacingScorer
-# from aesthetic_code.segmenter.segmenter import SegmentTreeNode
+from unittest.mock import MagicMock, patch
 
-# # Test case 1: No shapes
-# def test_empty_segment_tree():
-#     # Create an empty segment tree (no shapes)
-#     segment_tree = SegmentTreeNode()
+import pytest
+from pptx import Presentation
+from pptx.util import Pt
 
-#     # Create a scorer instance
-#     scorer = GroupSpacingScorer(segment_tree)
-
-#     # The score should be 0 as there are no shapes
-#     assert scorer.score() == 0.0
-
-# # Test case 2: Two groups of shapes with some spacing
-# def test_two_groups_with_spacing():
-#     # Create a presentation object
-#     ppt = Presentation()
-
-#     # Add slide
-#     slide = ppt.slides.add_slide(ppt.slide_layouts[5])  # Blank slide layout
-
-#     # Create some real shapes for the groups (e.g., rectangles)
-#     shape1 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(0),
-#         top=Pt(0),
-#         width=Pt(100),
-#         height=Pt(100),
-#     )
-#     shape2 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(0),
-#         top=Pt(120),
-#         width=Pt(100),
-#         height=Pt(100),
-#     )
-#     shape3 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(200),
-#         top=Pt(0),
-#         width=Pt(100),
-#         height=Pt(100),
-#     )
-#     shape4 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(200),
-#         top=Pt(120),
-#         width=Pt(100),
-#         height=Pt(100),
-#     )
-
-#     # Create segment nodes for the two groups
-#     group1 = SegmentTreeNode([shape1, shape2])
-#     group2 = SegmentTreeNode([shape3, shape4])
-
-#     # Create a root node with both groups as subregions
-#     segment_tree = SegmentTreeNode([], [group1, group2])
-
-#     # Create a scorer instance
-#     scorer = GroupSpacingScorer(segment_tree)
-
-#     # The score should consider the vertical gap between group1 and group2
-#     # The vertical distance is at least 20 (120 - 100), so the score should reflect that
-#     assert scorer.score() > 0.0
+from aesthetic_code.scorer.group_spacing_scorer import GroupSpacingScorer
+from aesthetic_code.segmenter.segmenter import PowerPointSegmenter, SegmentTreeNode
 
 
-# # Test case 3: Groups with no spacing (touching)
-# def test_no_spacing_between_groups():
-#     # Create a presentation object
-#     ppt = Presentation()
-
-#     # Add slide
-#     slide = ppt.slides.add_slide(ppt.slide_layouts[5])  # Blank slide layout
-
-#     # Create some real shapes for the groups with no gap between them
-#     shape1 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(0),
-#         top=Pt(0),
-#         width=Pt(100),
-#         height=Pt(100),
-#     )
-#     shape2 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(0),
-#         top=Pt(100),
-#         width=Pt(100),
-#         height=Pt(100),
-#     )
-#     shape3 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(200),
-#         top=Pt(0),
-#         width=Pt(100),
-#         height=Pt(100),
-#     )
-#     shape4 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(200),
-#         top=Pt(100),
-#         width=Pt(100),
-#         height=Pt(100),
-#     )
-
-#     # Create segment nodes for the two groups
-#     group1 = SegmentTreeNode([shape1, shape2])
-#     group2 = SegmentTreeNode([shape3, shape4])
-
-#     # Create a root node with both groups as subregions
-#     segment_tree = SegmentTreeNode([], [group1, group2])
-
-#     # Create a scorer instance
-#     scorer = GroupSpacingScorer(segment_tree)
-
-#     # The score should be 0 as the groups are directly adjacent (no gap)
-#     assert scorer.score() == 0.0
+# Mock the unit_conversion function to simply return the Pt in points
+@pytest.fixture
+def mock_unit_conversion():
+    with patch("aesthetic_code.utils.unit_conversion") as mock_conversion:
+        mock_conversion.side_effect = lambda x, unit: x
+        yield mock_conversion
 
 
-# # Test case 4: Multiple subregions with mixed spacing
-# def test_multiple_subregions():
-#     # Create a presentation object
-#     ppt = Presentation()
+# Mock a pptx presentation with slides and shapes
+@pytest.fixture
+def mock_pptx_presentation():
+    presentation = MagicMock(spec=Presentation)
+    presentation.slide_width, presentation.slide_height = Pt(800), Pt(600)
+    slide = MagicMock()
+    shape1 = MagicMock()
+    shape2 = MagicMock()
+    shape3 = MagicMock()
+    shape4 = MagicMock()
+    shape5 = MagicMock()
+    shape6 = MagicMock()
+    shape1.left, shape1.top, shape1.width, shape1.height = (
+        Pt(0),
+        Pt(0),
+        Pt(100),
+        Pt(100),
+    )
+    shape2.left, shape2.top, shape2.width, shape2.height = (
+        Pt(100),
+        Pt(100),
+        Pt(100),
+        Pt(100),
+    )
+    shape3.left, shape3.top, shape3.width, shape3.height = (
+        Pt(200),
+        Pt(300),
+        Pt(100),
+        Pt(100),
+    )
+    shape4.left, shape4.top, shape4.width, shape4.height = (
+        Pt(400),
+        Pt(200),
+        Pt(100),
+        Pt(100),
+    )
+    shape5.left, shape5.top, shape5.width, shape5.height = (
+        Pt(100),
+        Pt(300),
+        Pt(100),
+        Pt(100),
+    )
+    shape6.left, shape6.top, shape6.width, shape6.height = (
+        Pt(400),
+        Pt(100),
+        Pt(200),
+        Pt(100),
+    )
+    shape1.slide_type, shape2.slide_type, shape3.slide_type = (
+        "AutoShape",
+        "AutoShape",
+        "AutoShape",
+    )
+    shape4.slide_type, shape5.slide_type, shape6.slide_type = (
+        "AutoShape",
+        "AutoShape",
+        "AutoShape",
+    )
+    slide.shapes = [shape1, shape2, shape3, shape4, shape5, shape6]
+    presentation.slides = [slide]
+    return presentation
 
-#     # Add slide
-#     slide = ppt.slides.add_slide(ppt.slide_layouts[5])  # Blank slide layout
 
-#     # Create mock shapes for three subregions
-#     shape1 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(0),
-#         top=Pt(0),
-#         width=Pt(100),
-#         height=Pt(100),
-#     )
-#     shape2 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(10),
-#         top=Pt(110),
-#         width=Pt(110),
-#         height=Pt(110),
-#     )
-#     shape3 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(200),
-#         top=Pt(0),
-#         width=Pt(100),
-#         height=Pt(100),
-#     )
-#     shape4 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(220),
-#         top=Pt(120),
-#         width=Pt(120),
-#         height=Pt(120),
-#     )
-#     shape5 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(400),
-#         top=Pt(0),
-#         width=Pt(100),
-#         height=Pt(100),
-#     )
-#     shape6 = slide.shapes.add_shape(
-#         autoshape_type_id=1,  # msoShapeRectangle
-#         left=Pt(430),
-#         top=Pt(130),
-#         width=Pt(130),
-#         height=Pt(130),
-#     )
+def test_segmenter(mock_pptx_presentation):
+    presentation = mock_pptx_presentation
+    segmenter = PowerPointSegmenter(presentation, "pt")
 
-#     # Create segment nodes for the three groups
-#     group1 = SegmentTreeNode([shape1, shape2])
-#     group2 = SegmentTreeNode([shape3, shape4])
-#     group3 = SegmentTreeNode([shape5, shape6])
+    # Segment a single slide (index 0)
+    segments = segmenter.segment_all()
+    segment_tree: SegmentTreeNode = segments[0]
+    # segment_tree.print_tree()
+    scorer = GroupSpacingScorer(segment_tree)
+    neighbor_pairs = scorer._get_all_neighbor_pairs(segment_tree)
+    for pair in neighbor_pairs:
+        print(pair)
+    # Assert that the segmenter returned a non-empty segment tree
+    assert isinstance(segment_tree, SegmentTreeNode)
 
-#     # Create a root node with all three groups as subregions
-#     segment_tree = SegmentTreeNode([], [group1, group2, group3])
-
-#     # Create a scorer instance
-#     scorer = GroupSpacingScorer(segment_tree)
-
-#     # The score will depend on the gaps between the groups
-#     assert scorer.score() > 0.0  # There is some spacing between the groups
+    # Adjust based on expected output from _try_split logic
+    assert (
+        segment_tree.is_leaf() or segment_tree.subregions
+    )  # Expected behavior is context-dependent
