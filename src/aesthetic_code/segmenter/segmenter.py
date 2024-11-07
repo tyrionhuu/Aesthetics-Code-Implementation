@@ -23,7 +23,7 @@ Shape: TypeAlias = Union[
     BasePlaceholder,
 ]
 
-Subregion: TypeAlias = Union[list[Shape], "SegmentTreeNode"]
+Subregion: TypeAlias = Union[Shape, "SegmentTreeNode"]
 
 
 class SegmentTreeNode:
@@ -96,12 +96,12 @@ class Segmenter:
     def segment(self) -> SegmentTreeNode:
         return self._segment_region(self._shapes)
 
-    def _segment_region(self, shapes: list[Shape]) -> SegmentTreeNode:
+    def _segment_region(self, shapes: list) -> SegmentTreeNode:
         if not shapes:  # If shapes list is empty, return a leaf node
             raise ValueError("No shapes to segment")
 
         if len(shapes) == 1:
-            return SegmentTreeNode("leaf", subregions=[shapes])
+            return SegmentTreeNode("leaf", subregions=shapes)
 
         split_directions = ["horizontal", "vertical"]
         for split_direction in split_directions:
@@ -112,7 +112,7 @@ class Segmenter:
                     [self._segment_region(subregion) for subregion in subregions],
                 )
 
-        return SegmentTreeNode("leaf", [shapes])
+        return SegmentTreeNode("leaf", shapes)
 
     def _try_split(self, shapes: list[Shape], direction: str) -> list[list[Shape]]:
         if not shapes:
