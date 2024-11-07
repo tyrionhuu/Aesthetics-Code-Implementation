@@ -83,7 +83,8 @@ def test_segmenter(mock_pptx_presentation):
     segmenter = PowerPointSegmenter(presentation, "pt")
 
     # Segment a single slide (index 0)
-    segment_tree = segmenter.segment(0)
+    segments = segmenter.segment_all()
+    segment_tree: SegmentTreeNode = segments[0]
     segment_tree.print_tree()
 
     # Assert that the segmenter returned a non-empty segment tree
@@ -91,5 +92,5 @@ def test_segmenter(mock_pptx_presentation):
 
     # Adjust based on expected output from _try_split logic
     assert (
-        segment_tree.is_leaf() or segment_tree.subregions
+        segment_tree.is_leaf() or segment_tree._subregions
     )  # Expected behavior is context-dependent

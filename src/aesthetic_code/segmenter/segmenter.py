@@ -41,7 +41,7 @@ class SegmentTreeNode:
                              either 'vertical' or 'horizontal'.
             subregions (list[SegmentTreeNode]): list of subregions in this region.
         """
-        self._subregions = subregions if subregions else []  # Subregions of this node
+        self._subregions = subregions
         self._direction = direction  # Arrangement of subregions
         self._bounding_box = bounding_box  # Bounding box of the node
 
