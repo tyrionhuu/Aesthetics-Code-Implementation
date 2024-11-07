@@ -30,7 +30,8 @@ class SegmentTreeNode:
     def __init__(
         self,
         direction: str = "leaf",  # Direction of arrangement, either 'vertical' or 'horizontal'
-        subregions: list[Subregion] = [],  # Subregions of this node
+        subregions: list = [],  # Subregions of this node
+        bounding_box: dict[str, float] = {},  # Bounding box of the node
     ):
         """
         Initialize a SegmentTreeNode with information about its subtree arrangement.
@@ -40,8 +41,9 @@ class SegmentTreeNode:
                              either 'vertical' or 'horizontal'.
             subregions (list[SegmentTreeNode]): list of subregions in this region.
         """
-        self.subregions = subregions if subregions else []  # Subregions of this node
-        self.direction = direction  # Arrangement of subregions
+        self._subregions = subregions if subregions else []  # Subregions of this node
+        self._direction = direction  # Arrangement of subregions
+        self._bounding_box = bounding_box  # Bounding box of the node
 
     def is_leaf(self) -> bool:
         """
@@ -50,7 +52,7 @@ class SegmentTreeNode:
         Returns:
             bool: True if the node is a leaf node, False otherwise.
         """
-        return self.direction == "leaf"
+        return self._direction == "leaf"
 
     def print_tree(self, level: int = 0, indent: str = "  "):
         """
@@ -60,17 +62,18 @@ class SegmentTreeNode:
             level (int): The current level of the tree (default is 0).
         """
         if self.is_leaf():
-            if isinstance(self.subregions, list):
-                shapes = cast(list[Shape], self.subregions)
+            if isinstance(self._subregions, list):
+                shapes = cast(list[Shape], self._subregions)
             else:
                 raise ValueError("Invalid subregion type")
             print(
                 f"{indent * level}Leaf: "
                 + ", ".join([str(shape.shape_type) for shape in shapes])
+                + f"\t{self._bounding_box}"
             )
         else:
-            print(f"{indent * level}{self.direction}:")
-            for subregion in self.subregions:
+            print(f"{indent * level}{self._direction}:" + f"\t{self._bounding_box}")
+            for subregion in self._subregions:
                 if isinstance(subregion, SegmentTreeNode):
                     subregion.print_tree(level + 1)
                 else:
@@ -101,18 +104,62 @@ class Segmenter:
             raise ValueError("No shapes to segment")
 
         if len(shapes) == 1:
-            return SegmentTreeNode("leaf", subregions=shapes)
+            shape = shapes[0]
+            bounding_box = {
+                "left": shape.left,
+                "top": shape.top,
+                "right": shape.left + shape.width,
+                "bottom": shape.top + shape.height,
+            }
+            return SegmentTreeNode(
+                direction="leaf", subregions=shapes, bounding_box=bounding_box
+            )
 
         split_directions = ["horizontal", "vertical"]
         for split_direction in split_directions:
             subregions = self._try_split(shapes, split_direction)
             if subregions:
+                child_nodes = [
+                    self._segment_region(subregion) for subregion in subregions
+                ]
+                bounding_boxs = [node._bounding_box for node in child_nodes]
+                leftmost = min([box["left"] for box in bounding_boxs])
+                topmost = min([box["top"] for box in bounding_boxs])
+                rightmost = max([box["right"] for box in bounding_boxs])
+                bottommost = max([box["bottom"] for box in bounding_boxs])
                 return SegmentTreeNode(
-                    split_direction,
-                    [self._segment_region(subregion) for subregion in subregions],
+                    direction=split_direction,
+                    subregions=child_nodes,
+                    bounding_box={
+                        "left": leftmost,
+                        "top": topmost,
+                        "right": rightmost,
+                        "bottom": bottommost,
+                    },
                 )
-
-        return SegmentTreeNode("leaf", shapes)
+        bounding_boxs = [
+            {
+                "left": shape.left,
+                "top": shape.top,
+                "right": shape.left + shape.width,
+                "bottom": shape.top + shape.height,
+            }
+            for shape in shapes
+        ]
+        leftmost = min([box["left"] for box in bounding_boxs])
+        topmost = min([box["top"] for box in bounding_boxs])
+        rightmost = max([box["right"] for box in bounding_boxs])
+        bottommost = max([box["bottom"] for box in bounding_boxs])
+        return SegmentTreeNode(
+            direction="leaf",
+            subregions=shapes,
+            bounding_box={
+                "left": leftmost,
+                "top": topmost,
+                "right": rightmost,
+                "bottom": bottommost,
+            },
+        )
 
     def _try_split(self, shapes: list[Shape], direction: str) -> list[list[Shape]]:
         if not shapes:
