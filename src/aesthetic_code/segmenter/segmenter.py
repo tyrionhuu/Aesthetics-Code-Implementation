@@ -10,7 +10,7 @@ from pptx.shapes.picture import Movie, Picture
 from pptx.shapes.placeholder import BasePlaceholder
 from pptx.util import Length
 
-from aesthetic_code.utils import unit_conversion
+from aesthetic_code.utils import intervals_minus_interval, unit_conversion
 
 Shape: TypeAlias = Union[
     BaseShape,
@@ -117,12 +117,7 @@ class Segmenter:
 
         if len(shapes) == 1:
             shape = shapes[0]
-            bounding_box = {
-                "left": shape.left,
-                "top": shape.top,
-                "right": shape.left + shape.width,
-                "bottom": shape.top + shape.height,
-            }
+            bounding_box = self._generate_bounding_box_from_shapes(shape)
             return SegmentTreeNode(
                 direction="leaf", subregions=shapes, bounding_box=bounding_box
             )
@@ -150,13 +145,7 @@ class Segmenter:
                     },
                 )
         bounding_boxs = [
-            {
-                "left": shape.left,
-                "top": shape.top,
-                "right": shape.left + shape.width,
-                "bottom": shape.top + shape.height,
-            }
-            for shape in shapes
+            self._generate_bounding_box_from_shapes(shape) for shape in shapes
         ]
         leftmost = min([box["left"] for box in bounding_boxs])
         topmost = min([box["top"] for box in bounding_boxs])
@@ -172,6 +161,26 @@ class Segmenter:
                 "bottom": bottommost,
             },
         )
+
+    def _generate_bounding_box_from_shapes(self, shape: Shape) -> dict:
+        return {
+            "left": unit_conversion(shape.left, self._measurement_unit),
+            "top": unit_conversion(shape.top, self._measurement_unit),
+            "right": unit_conversion(shape.left, self._measurement_unit)
+            + unit_conversion(shape.width, self._measurement_unit),
+            "bottom": unit_conversion(shape.top, self._measurement_unit)
+            + unit_conversion(shape.height, self._measurement_unit),
+        }
+
+    def _generate_bounding_box(
+        self, left: Length, top: Length, right: Length, bottom: Length
+    ) -> dict:
+        return {
+            "left": unit_conversion(left, self._measurement_unit),
+            "top": unit_conversion(top, self._measurement_unit),
+            "right": unit_conversion(right, self._measurement_unit),
+            "bottom": unit_conversion(bottom, self._measurement_unit),
+        }
 
     def _try_split(self, shapes: list[Shape], direction: str) -> list[list[Shape]]:
         if not shapes:
@@ -206,24 +215,61 @@ class Segmenter:
     def _define_grid_lines(self, shapes: list[Shape], direction: str) -> list[float]:
         if not shapes:
             return []  # Return empty list if no shapes to define grid lines
-
+        lines = []
         if direction == "horizontal":
-            y_positions = set()
+            top_y_position = min(
+                [unit_conversion(shape.top, self._measurement_unit) for shape in shapes]
+            )
+            bottom_y_position = max(
+                [
+                    unit_conversion(shape.top, self._measurement_unit)
+                    + unit_conversion(shape.height, self._measurement_unit)
+                    for shape in shapes
+                ]
+            )
+            # print(f"Top: {top_y_position}, Bottom: {bottom_y_position}")
+            intervals = [(top_y_position, bottom_y_position)]
+            # print(f"Intervals: {intervals}")
             for shape in shapes:
                 top = unit_conversion(shape.top, self._measurement_unit)
                 height = unit_conversion(shape.height, self._measurement_unit)
-                y_positions.add(top)
-                y_positions.add(top + height)
-            return sorted(y_positions)
+                intervals = intervals_minus_interval(intervals, (top, top + height))
+                # print(f"Intervals: {intervals}")
+            # print(f"Intervals: {intervals}")
+            for interval in intervals:
+                line = (interval[0] + interval[1]) / 2
+                # print(f"Line: {line}")
+                lines.append(line)
+
+            # print(f"Horizontal lines: {lines}")
+            return sorted(lines)
 
         elif direction == "vertical":
-            x_positions = set()
+            left_x_position = min(
+                [
+                    unit_conversion(shape.left, self._measurement_unit)
+                    for shape in shapes
+                ]
+            )
+            right_x_position = max(
+                [
+                    unit_conversion(shape.left, self._measurement_unit)
+                    + unit_conversion(shape.width, self._measurement_unit)
+                    for shape in shapes
+                ]
+            )
+            intervals = [(left_x_position, right_x_position)]
             for shape in shapes:
                 left = unit_conversion(shape.left, self._measurement_unit)
                 width = unit_conversion(shape.width, self._measurement_unit)
-                x_positions.add(left)
-                x_positions.add(left + width)
-            return sorted(x_positions)
+                intervals = intervals_minus_interval(intervals, (left, left + width))
+
+            for interval in intervals:
+                line = (interval[0] + interval[1]) / 2
+                lines.append(line)
+
+            # print(f"Vertical lines: {lines}")
+            return sorted(lines)
 
         else:
             raise ValueError(f"Invalid direction: {direction}")

@@ -88,9 +88,11 @@ def test_segmenter(mock_pptx_presentation):
     segment_tree: SegmentTreeNode = segments[0]
     # segment_tree.print_tree()
     scorer = GroupSpacingScorer(segment_tree)
-    neighbor_pairs = scorer._get_all_neighbor_pairs(segment_tree)
-    for pair in neighbor_pairs:
-        print(pair)
+    score = scorer.score()
+    print(score)
+    # neighbor_pairs = scorer._get_all_neighbor_pairs(segment_tree)
+    # for pair in neighbor_pairs:
+    #     print(pair)
     # Assert that the segmenter returned a non-empty segment tree
     assert isinstance(segment_tree, SegmentTreeNode)
 
