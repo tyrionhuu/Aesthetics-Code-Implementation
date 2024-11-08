@@ -7,6 +7,7 @@ from pptx.shapes.graphfrm import GraphicFrame
 from pptx.shapes.group import GroupShape
 from pptx.shapes.picture import Movie, Picture
 from pptx.shapes.placeholder import BasePlaceholder
+from pptx.util import Length
 
 from aesthetic_code.segmenter.segmenter import SegmentTreeNode
 from aesthetic_code.utils import unit_conversion
@@ -33,6 +34,8 @@ class GroupSpacingScorer:
 
     def __init__(
         self,
+        slide_width: Length,
+        slide_height: Length,
         segment_tree: SegmentTreeNode,
         spacing_threshold: list[float] = [0.1, 0.3],
         unit_measurement: str = "pt",
@@ -41,6 +44,8 @@ class GroupSpacingScorer:
         self._neighbor_pairs = self._get_all_neighbor_pairs(segment_tree)
         self._spacing_threshold = spacing_threshold
         self._unit_measurement = unit_measurement
+        self._slide_width = slide_width
+        self._slide_height = slide_height
 
     @property
     def spacing_threshold(self) -> list[float]:
@@ -57,6 +62,22 @@ class GroupSpacingScorer:
     @unit_measurement.setter
     def unit_measurement(self, value: str):
         self._unit_measurement = value
+
+    @property
+    def slide_width(self) -> Length:
+        return self._slide_width
+
+    @slide_width.setter
+    def slide_width(self, value: Length):
+        self._slide_width = value
+
+    @property
+    def slide_height(self) -> Length:
+        return self._slide_height
+
+    @slide_height.setter
+    def slide_height(self, value: Length):
+        self._slide_height = value
 
     def _get_all_neighbor_pairs(
         self,
@@ -130,27 +151,58 @@ class GroupSpacingScorer:
             subregion = cast(SegmentTreeNode, subregion1)
             right_subregion1 = subregion.bounding_box["right"]
             left_subregion1 = subregion.bounding_box["left"]
+            top_subregion1 = subregion.bounding_box["top"]
+            bottom_subregion1 = subregion.bounding_box["bottom"]
         else:
             shape = cast(Shape, subregion1)
             right_subregion1 = unit_conversion(
                 shape.left, self._unit_measurement
             ) + unit_conversion(shape.width, self._unit_measurement)
             left_subregion1 = unit_conversion(shape.left, self._unit_measurement)
+            top_subregion1 = unit_conversion(shape.top, self._unit_measurement)
+            bottom_subregion1 = unit_conversion(
+                shape.top, self._unit_measurement
+            ) + unit_conversion(shape.height, self._unit_measurement)
+
+        horizontal_spacing = 0.0
 
         if right_subregion1 <= subregion2.bounding_box["left"]:
-            spacing = subregion2.bounding_box["left"] - right_subregion1
+            horizontal_spacing = subregion2.bounding_box["left"] - right_subregion1
         elif subregion2.bounding_box["right"] <= left_subregion1:
-            spacing = left_subregion1 - subregion2.bounding_box["right"]
+            horizontal_spacing = left_subregion1 - subregion2.bounding_box["right"]
         else:
-            return 0.0
+            pass
 
-        if (
-            spacing <= self._spacing_threshold[0]
-            or spacing >= self._spacing_threshold[1]
-        ):
-            return 0.0
+        vertical_spacing = 0.0
+
+        if bottom_subregion1 <= subregion2.bounding_box["top"]:
+            vertical_spacing = subregion2.bounding_box["top"] - bottom_subregion1
+        elif subregion2.bounding_box["bottom"] <= top_subregion1:
+            vertical_spacing = top_subregion1 - subregion2.bounding_box["bottom"]
         else:
-            return 1.0
+            pass
+
+        score = 0.0
+
+        if horizontal_spacing <= self._spacing_threshold[0] * unit_conversion(
+            self._slide_width, self._unit_measurement
+        ) or horizontal_spacing >= self._spacing_threshold[1] * unit_conversion(
+            self._slide_width, self._unit_measurement
+        ):
+            score += 0.0
+        else:
+            score += 0.5
+
+        if vertical_spacing <= self._spacing_threshold[0] * unit_conversion(
+            self._slide_height, self._unit_measurement
+        ) or vertical_spacing >= self._spacing_threshold[1] * unit_conversion(
+            self._slide_height, self._unit_measurement
+        ):
+            score += 0.0
+        else:
+            score += 0.5
+
+        return score
 
     def _score_horizontal_spacing(
         self, subregion1: Subregion, subregion2: Subregion
@@ -188,9 +240,10 @@ class GroupSpacingScorer:
         else:
             raise ValueError("Overlapping subregions in horizontal spacing calculation")
 
-        if (
-            spacing <= self._spacing_threshold[0]
-            or spacing >= self._spacing_threshold[1]
+        if spacing <= self._spacing_threshold[0] * unit_conversion(
+            self._slide_width, self._unit_measurement
+        ) or spacing >= self._spacing_threshold[1] * unit_conversion(
+            self._slide_width, self._unit_measurement
         ):
             return 0.0
         else:
@@ -232,9 +285,10 @@ class GroupSpacingScorer:
         else:
             raise ValueError("Overlapping subregions in vertical spacing calculation")
 
-        if (
-            spacing <= self._spacing_threshold[0]
-            or spacing >= self._spacing_threshold[1]
+        if spacing <= self._spacing_threshold[0] * unit_conversion(
+            self._slide_height, self._unit_measurement
+        ) or spacing >= self._spacing_threshold[1] * unit_conversion(
+            self._slide_height, self._unit_measurement
         ):
             return 0.0
         else:

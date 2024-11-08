@@ -87,7 +87,11 @@ def test_segmenter(mock_pptx_presentation):
     segments = segmenter.segment_all()
     segment_tree: SegmentTreeNode = segments[0]
     # segment_tree.print_tree()
-    scorer = GroupSpacingScorer(segment_tree)
+    scorer = GroupSpacingScorer(
+        slide_height=presentation.slide_height,
+        slide_width=presentation.slide_width,
+        segment_tree=segment_tree,
+    )
     score = scorer.score()
     print(score)
     # neighbor_pairs = scorer._get_all_neighbor_pairs(segment_tree)
