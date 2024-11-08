@@ -9,7 +9,7 @@ from pptx.shapes.picture import Movie, Picture
 from pptx.shapes.placeholder import BasePlaceholder
 from pptx.util import Length
 
-from aesthetic_code.segmenter.segmenter import SegmentTreeNode
+from aesthetic_code.segmenter.segmenter import SegmentTreeNode, get_all_neighbor_pairs
 from aesthetic_code.utils import unit_conversion
 
 Shape: TypeAlias = Union[
@@ -41,7 +41,7 @@ class GroupSpacingScorer:
         unit_measurement: str = "pt",
     ):
         self._segment_tree = segment_tree
-        self._neighbor_pairs = self._get_all_neighbor_pairs(segment_tree)
+        self._neighbor_pairs = get_all_neighbor_pairs(segment_tree)
         self._spacing_threshold = spacing_threshold
         self._unit_measurement = unit_measurement
         self._slide_width = slide_width
@@ -78,41 +78,6 @@ class GroupSpacingScorer:
     @slide_height.setter
     def slide_height(self, value: Length):
         self._slide_height = value
-
-    def _get_all_neighbor_pairs(
-        self,
-        node: SegmentTreeNode,
-    ) -> list[tuple[str, Subregion, Subregion]]:
-        """
-        Get all pairs of neighboring subregions in the segment tree.
-        The segment tree is a binary tree.
-        get all (left child, parent), (right child, parent), (left child, right child) pairs
-        """
-        directions = ["belongs_to", "horizontal", "vertical"]
-        pairs: list[tuple[str, Subregion, Subregion]] = []
-        if node.is_leaf():
-            return pairs
-
-        if node.subregions[0]:
-            pairs.append((directions[0], node.subregions[0], node))
-            if isinstance(node.subregions[0], SegmentTreeNode):
-                pairs.extend(
-                    self._get_all_neighbor_pairs(
-                        cast(SegmentTreeNode, node.subregions[0])
-                    )
-                )
-        if node.subregions[1]:
-            pairs.append((directions[0], node.subregions[1], node))
-            if isinstance(node.subregions[1], SegmentTreeNode):
-                pairs.extend(
-                    self._get_all_neighbor_pairs(
-                        cast(SegmentTreeNode, node.subregions[1])
-                    )
-                )
-        if node.subregions[0] and node.subregions[1]:
-            pairs.append((node.direction, node.subregions[0], node.subregions[1]))
-
-        return pairs
 
     def score(self) -> float:
         """

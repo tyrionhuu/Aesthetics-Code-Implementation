@@ -341,3 +341,34 @@ class PowerPointSegmenter:
 
     def segment_all(self) -> dict:
         return {i: self.segment(i) for i in range(len(self._presentation.slides))}
+
+
+def get_all_neighbor_pairs(
+    node: SegmentTreeNode,
+) -> list[tuple[str, Subregion, Subregion]]:
+    """
+    Get all pairs of neighboring subregions in the segment tree.
+    The segment tree is a binary tree.
+    get all (left child, parent), (right child, parent), (left child, right child) pairs
+    """
+    directions = ["belongs_to", "horizontal", "vertical"]
+    pairs: list[tuple[str, Subregion, Subregion]] = []
+    if node.is_leaf():
+        return pairs
+
+    if node.subregions[0]:
+        pairs.append((directions[0], node.subregions[0], node))
+        if isinstance(node.subregions[0], SegmentTreeNode):
+            pairs.extend(
+                get_all_neighbor_pairs(cast(SegmentTreeNode, node.subregions[0]))
+            )
+    if node.subregions[1]:
+        pairs.append((directions[0], node.subregions[1], node))
+        if isinstance(node.subregions[1], SegmentTreeNode):
+            pairs.extend(
+                get_all_neighbor_pairs(cast(SegmentTreeNode, node.subregions[1]))
+            )
+    if node.subregions[0] and node.subregions[1]:
+        pairs.append((node.direction, node.subregions[0], node.subregions[1]))
+
+    return pairs

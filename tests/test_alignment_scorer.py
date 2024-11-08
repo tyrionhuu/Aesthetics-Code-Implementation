@@ -4,8 +4,12 @@ import pytest
 from pptx import Presentation
 from pptx.util import Pt
 
-from aesthetic_code.scorer.group_spacing_scorer import GroupSpacingScorer
-from aesthetic_code.segmenter.segmenter import PowerPointSegmenter, SegmentTreeNode
+from aesthetic_code.scorer.alignment_scorer import AlignmentScorer
+from aesthetic_code.segmenter.segmenter import (
+    PowerPointSegmenter,
+    SegmentTreeNode,
+    get_all_neighbor_pairs,
+)
 
 
 # Mock the unit_conversion function to simply return the Pt in points
@@ -87,14 +91,12 @@ def test_segmenter(mock_pptx_presentation):
     segments = segmenter.segment_all()
     segment_tree: SegmentTreeNode = segments[0]
     # segment_tree.print_tree()
-    scorer = GroupSpacingScorer(
-        slide_height=presentation.slide_height,
-        slide_width=presentation.slide_width,
-        segment_tree=segment_tree,
-    )
-    score = scorer.score()
-    print(score)
+    neighbor_pairs = get_all_neighbor_pairs(segment_tree)
 
+    for pair in neighbor_pairs:
+        scorer = AlignmentScorer(pair[1], pair[2])
+        score = scorer.score()
+        print(score)
     # Assert that the segmenter returned a non-empty segment tree
     assert isinstance(segment_tree, SegmentTreeNode)
 
